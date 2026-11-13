@@ -11,10 +11,7 @@ API input schema:
     "image2":    str,         # Optional. Second reference image (base64). Defaults to image.
     "image3":    str,         # Optional. Third reference image (base64). Defaults to image.
     "image4":    str,         # Optional. Fourth reference image (base64). Defaults to image.
-    "seed":      int,         # Optional. -1 = random. Default: -1
-    "steps":     int,         # Optional. Default: 6
-    "cfg":       float,       # Optional. Default: 1.0
-    "denoise":   float        # Optional. Default: 1.0
+    "megapixels": float        # Optional. Output resolution target. Default: 16 (MP)
   }
 
 API output schema:
@@ -22,11 +19,12 @@ API output schema:
 
 Node map (api-workflow.json):
   "43" — PrimitiveStringMultiline  — prompt text
+  "56" — ResizeImageMaskNode       — scale to N megapixels (megapixels param)
   "74" — LoadImage                 — image 1 (primary, goes through resize pipeline)
   "75" — LoadImage                 — image 2
   "76" — LoadImage                 — image 3
   "77" — LoadImage                 — image 4
-  "38" — KSampler                  — seed, steps, cfg, denoise
+  "38" — KSampler                  — fixed values from workflow
   "73" — SaveImage                 — output
 """
 
@@ -65,7 +63,7 @@ NODE_IMG1     = "74"   # LoadImage — primary image (goes through resize pipeli
 NODE_IMG2     = "75"   # LoadImage — image 2
 NODE_IMG3     = "76"   # LoadImage — image 3
 NODE_IMG4     = "77"   # LoadImage — image 4
-NODE_SAMPLER  = "38"   # KSampler — seed, steps, cfg, denoise
+NODE_RESIZE   = "56"   # ResizeImageMaskNode — scale to N megapixels
 
 
 # ──────────────────────────────────────────────
@@ -207,28 +205,18 @@ def handler(job: dict) -> dict:
     if not prompt_text:
         return {"error": "'prompt' is required."}
 
-    seed    = int(job_input.get("seed", -1))
-    steps   = int(job_input.get("steps", 6))
-    cfg     = float(job_input.get("cfg", 1.0))
-    denoise = float(job_input.get("denoise", 1.0))
+    megapixels = float(job_input.get("megapixels", 16))
 
-    if seed == -1:
-        import random
-        seed = random.randint(0, 2**32 - 1)
-
-    logger.info(f"[{task_id}] prompt={prompt_text!r}, seed={seed}, steps={steps}, cfg={cfg}")
+    logger.info(f"[{task_id}] prompt={prompt_text!r}, megapixels={megapixels}")
 
     # ── Patch workflow ──
     workflow = json.loads(json.dumps(WORKFLOW_TEMPLATE))   # deep copy
-    workflow[NODE_PROMPT]["inputs"]["value"]    = prompt_text
-    workflow[NODE_IMG1]["inputs"]["image"]      = img1_path
-    workflow[NODE_IMG2]["inputs"]["image"]      = img2_path
-    workflow[NODE_IMG3]["inputs"]["image"]      = img3_path
-    workflow[NODE_IMG4]["inputs"]["image"]      = img4_path
-    workflow[NODE_SAMPLER]["inputs"]["seed"]    = seed
-    workflow[NODE_SAMPLER]["inputs"]["steps"]   = steps
-    workflow[NODE_SAMPLER]["inputs"]["cfg"]     = cfg
-    workflow[NODE_SAMPLER]["inputs"]["denoise"] = denoise
+    workflow[NODE_PROMPT]["inputs"]["value"]                   = prompt_text
+    workflow[NODE_RESIZE]["inputs"]["resize_type.megapixels"]  = megapixels
+    workflow[NODE_IMG1]["inputs"]["image"]                     = img1_path
+    workflow[NODE_IMG2]["inputs"]["image"]                     = img2_path
+    workflow[NODE_IMG3]["inputs"]["image"]                     = img3_path
+    workflow[NODE_IMG4]["inputs"]["image"]                     = img4_path
 
     # ── Connect WebSocket (retry up to 5 min — large models take time to load) ──
     ws_url = f"ws://{SERVER_ADDRESS}:8188/ws?clientId={CLIENT_ID}"
