@@ -11,7 +11,8 @@ API input schema:
     "image2":    str,         # Optional. Second reference image (base64). Defaults to image.
     "image3":    str,         # Optional. Third reference image (base64). Defaults to image.
     "image4":    str,         # Optional. Fourth reference image (base64). Defaults to image.
-    "megapixels": float        # Optional. Output resolution target. Default: 16 (MP)
+    "megapixels":   float,       # Optional. Output resolution target. Default: 16 (MP)
+    "jpeg_quality": int          # Optional. JPEG quality for output compression. Default: 90
   }
 
 API output schema:
@@ -30,6 +31,7 @@ Node map (api-workflow.json):
 
 import runpod
 import os
+import io
 import websocket
 import base64
 import json
@@ -41,6 +43,7 @@ import urllib.error
 import subprocess
 import binascii
 import time
+from PIL import Image
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -69,6 +72,14 @@ NODE_RESIZE   = "56"   # ResizeImageMaskNode — scale to N megapixels
 # ──────────────────────────────────────────────
 # Utilities
 # ──────────────────────────────────────────────
+
+def compress_to_jpeg(png_bytes: bytes, quality: int = 90) -> bytes:
+    """Convert PNG bytes to JPEG to keep payload within RunPod's ~10 MB limit."""
+    img = Image.open(io.BytesIO(png_bytes)).convert("RGB")
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=quality, optimize=True)
+    return buf.getvalue()
+
 
 def save_b64_image(b64_data: str, path: str) -> None:
     try:
@@ -205,9 +216,10 @@ def handler(job: dict) -> dict:
     if not prompt_text:
         return {"error": "'prompt' is required."}
 
-    megapixels = float(job_input.get("megapixels", 16))
+    megapixels   = float(job_input.get("megapixels", 16))
+    jpeg_quality = int(job_input.get("jpeg_quality", 90))
 
-    logger.info(f"[{task_id}] prompt={prompt_text!r}, megapixels={megapixels}")
+    logger.info(f"[{task_id}] prompt={prompt_text!r}, megapixels={megapixels}, jpeg_quality={jpeg_quality}")
 
     # ── Patch workflow ──
     workflow = json.loads(json.dumps(WORKFLOW_TEMPLATE))   # deep copy
@@ -244,11 +256,15 @@ def handler(job: dict) -> dict:
     if not images:
         return {"error": "No images returned from ComfyUI"}
 
-    # Return first output image
+    # Return first output image — compressed to JPEG to stay within RunPod's payload limit
     for node_id, node_images in images.items():
         if node_images:
-            logger.info(f"[{task_id}] Done — returning image from node {node_id}")
-            return {"image": node_images[0]}
+            png_bytes = base64.b64decode(node_images[0])
+            jpeg_bytes = compress_to_jpeg(png_bytes, quality=jpeg_quality)
+            jpeg_b64 = base64.b64encode(jpeg_bytes).decode("utf-8")
+            size_mb = len(jpeg_bytes) / 1_048_576
+            logger.info(f"[{task_id}] Done — returning JPEG from node {node_id} ({size_mb:.1f} MB)")
+            return {"image": jpeg_b64}
 
     return {"error": "No output image found in ComfyUI history"}
 
