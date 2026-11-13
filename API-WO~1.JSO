@@ -1,0 +1,277 @@
+{
+  "29": {
+    "inputs": {
+      "unet_name": "minimax_h3_image_pruned_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model",
+      "cnr_id": "comfy-core",
+      "ver": "0.44.2"
+    }
+  },
+  "30": {
+    "inputs": {
+      "clip_name": "minimax-h3/qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP",
+      "cnr_id": "comfy-core",
+      "ver": "0.44.2"
+    }
+  },
+  "31": {
+    "inputs": {
+      "vae_name": "minimax-h3/minimax_h3_image_vae_fp16.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE",
+      "cnr_id": "comfy-core",
+      "ver": "0.44.2"
+    }
+  },
+  "32": {
+    "inputs": {
+      "prompt": [
+        "43",
+        0
+      ],
+      "width": [
+        "50",
+        0
+      ],
+      "height": [
+        "50",
+        1
+      ],
+      "clip": [
+        "30",
+        0
+      ],
+      "vae": [
+        "31",
+        0
+      ],
+      "images.image_0": [
+        "48",
+        0
+      ],
+      "images.image_1": [
+        "75",
+        0
+      ],
+      "images.image_2": [
+        "76",
+        0
+      ],
+      "images.image_3": [
+        "77",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3ImageConditioning",
+    "_meta": {
+      "title": "MiniMax H3 Image Conditioning",
+      "cnr_id": "comfy-core",
+      "ver": "0.45.3"
+    }
+  },
+  "33": {
+    "inputs": {
+      "conditioning": [
+        "32",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": {
+      "title": "Conditioning Zero Out",
+      "cnr_id": "comfy-core",
+      "ver": "0.44.2"
+    }
+  },
+  "38": {
+    "inputs": {
+      "seed": 869258472129777,
+      "steps": 6,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "29",
+        0
+      ],
+      "positive": [
+        "32",
+        0
+      ],
+      "negative": [
+        "33",
+        0
+      ],
+      "latent_image": [
+        "32",
+        1
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler",
+      "cnr_id": "comfy-core",
+      "ver": "0.44.2"
+    }
+  },
+  "42": {
+    "inputs": {
+      "samples": [
+        "38",
+        0
+      ],
+      "vae": [
+        "31",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode",
+      "cnr_id": "comfy-core",
+      "ver": "0.44.2"
+    }
+  },
+  "43": {
+    "inputs": {
+      "value": ""
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "Text (user_prompt)",
+      "cnr_id": "comfy-core",
+      "ver": "0.44.2"
+    }
+  },
+  "48": {
+    "inputs": {
+      "resize_type": "scale to multiple",
+      "resize_type.multiple": 32,
+      "scale_method": "area",
+      "input": [
+        "56",
+        0
+      ]
+    },
+    "class_type": "ResizeImageMaskNode",
+    "_meta": {
+      "title": "Resize Image/Mask",
+      "cnr_id": "comfy-core",
+      "ver": "0.44.2"
+    }
+  },
+  "50": {
+    "inputs": {
+      "image": [
+        "48",
+        0
+      ]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "Get Image Size",
+      "cnr_id": "comfy-core",
+      "ver": "0.44.2"
+    }
+  },
+  "56": {
+    "inputs": {
+      "resize_type": "scale total pixels",
+      "resize_type.megapixels": 16,
+      "scale_method": "area",
+      "input": [
+        "74",
+        0
+      ]
+    },
+    "class_type": "ResizeImageMaskNode",
+    "_meta": {
+      "title": "Resize Image/Mask",
+      "cnr_id": "comfy-core",
+      "ver": "0.44.2"
+    }
+  },
+  "61": {
+    "inputs": {
+      "value": false
+    },
+    "class_type": "PrimitiveBoolean",
+    "_meta": {
+      "title": "Boolean (Enable PE?)",
+      "cnr_id": "comfy-core",
+      "ver": "0.44.2"
+    }
+  },
+  "73": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "42",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image",
+      "cnr_id": "comfy-core",
+      "ver": "0.45.3"
+    }
+  },
+  "74": {
+    "inputs": {
+      "image": "/comfyui/input/placeholder_1.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "image 1",
+      "cnr_id": "comfy-core",
+      "ver": "0.45.3"
+    }
+  },
+  "75": {
+    "inputs": {
+      "image": "/comfyui/input/placeholder_2.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Image 2",
+      "cnr_id": "comfy-core",
+      "ver": "0.45.3"
+    }
+  },
+  "76": {
+    "inputs": {
+      "image": "/comfyui/input/placeholder_3.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "image 3",
+      "cnr_id": "comfy-core",
+      "ver": "0.45.3"
+    }
+  },
+  "77": {
+    "inputs": {
+      "image": "/comfyui/input/placeholder_4.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "image 4",
+      "cnr_id": "comfy-core",
+      "ver": "0.45.3"
+    }
+  }
+}
